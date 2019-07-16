@@ -1,0 +1,15 @@
+includes:
+- 'layer:basic'
+- "layer:options"
+- 'interface:zookeeper'
+- 'interface:kafka'
+- 'interface:tls-certificates'
+- 'layer:tls-client'
+- 'layer:apt'
+- 'interface:nrpe-external-master'
+- 'interface:local-monitors'
+options:
+  apt:
+    packages:
+    - kafka
+is: "kafka"

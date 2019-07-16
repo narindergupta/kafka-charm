@@ -1,0 +1,10 @@
+parts
+prime
+stage
+snap/.snapcraft
+.*.swp
+*.snap
+*_source.tar.bz2
+charm/builds
+charm/deps
+.tox

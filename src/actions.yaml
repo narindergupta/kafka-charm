@@ -1,0 +1,82 @@
+"debug":
+  "description": "Collect debug data"
+"create-topic":
+  "description": "Create a new Kafka topic"
+  "params":
+    "topic":
+      "type": "string"
+      "description": "Topic name"
+    "partitions":
+      "type": "integer"
+      "description": "Number of partitions for the topic being created"
+    "replication":
+      "type": "integer"
+      "description": "Replication factor for each partition in the topic"
+  "required": ["topic", "partitions", "replication"]
+  "additionalProperties": !!bool "false"
+"alter-topic":
+  "description": "Alter an existing Kafka topic"
+  "params":
+    "topic":
+      "type": "string"
+      "description": "Topic name"
+    "partitions":
+      "type": "integer"
+      "description": "Number of partitions for the topic being created"
+  "required": ["topic", "partitions"]
+  "additionalProperties": !!bool "false"
+"list-topics":
+  "description": "List all Kafka topics"
+"list-zks":
+  "description": "List ip:port info for connected Zookeeper servers"
+"read-topic":
+  "description": "Consume an existing kafka topic"
+  "params":
+    "topic":
+      "type": "string"
+      "description": "Topic name"
+    "partition":
+      "type": "integer"
+      "description": "Partition to consume"
+  "required": ["topic", "partition"]
+  "additionalProperties": !!bool "false"
+"smoke-test":
+  "description": >
+    Verify that Kafka is working as expected by listing zookeepers, then
+    creating/listing/deleting a topic
+"write-topic":
+  "description": "Write to a kafka topic"
+  "params":
+    "topic":
+      "type": "string"
+      "description": "Topic name"
+    "data":
+      "type": "string"
+      "description": "Data to write to topic"
+  "required": ["topic", "data"]
+  "additionalProperties": !!bool "false"
+"mirror-topics":
+  "description": "Create a mirror for list of topic within kafka"
+  "params":
+    "producer-config":
+      "type": "string"
+      "description": "where from copy the topics"
+    "consumer-config":
+      "type": "string"
+      "description": "where to copy the topics"
+    "topics":
+      "type": "string"
+      "description": "Topic name needs to be mirrored"
+  "required": ["producer-config", "consumer-config", "topics"]
+  "additionalProperties": !!bool "false"
+"reassign-topics":
+  "description": "Reaasign topics to new broker when a cluster scales out"
+  "params":
+    "broker":
+      "type": "string"
+      "description": "broker ids for scale out brokers"
+    "topics-json":
+      "type": "string"
+      "description": "Base 64 encoded Json file contains the topics reassignment"
+  "required": ["broker", "topics-json"]
+  "additionalProperties": !!bool "false"

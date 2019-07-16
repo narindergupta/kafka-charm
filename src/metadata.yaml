@@ -1,0 +1,37 @@
+name: kafka
+summary: A distributed streaming platform
+maintainer: Casey Marshall <casey.marshall@canonical.com>
+description: |
+  This charm deploys a more recent version of Kafka than the bigtop charm.
+  It's intended for some internal projects and is not supported for general
+  community use.
+tags:
+  - storage
+  - streaming
+  - distributed
+subordinate: false
+provides:
+  client:
+    interface: kafka
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
+  local-monitors:
+    interface: local-monitors
+    scope: container
+requires:
+  certificates:
+    interface: tls-certificates
+  zookeeper:
+    interface: zookeeper
+min-juju-version: "2.4.0"
+series:
+- bionic
+storage:
+  logs:
+    type: filesystem
+    description: Directory where log files will be stored
+    minimum-size: 20M
+    location: /media/kafka
+    multiple:
+      range: "0-1"
