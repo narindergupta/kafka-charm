@@ -1,33 +1,22 @@
-# kafka-schnapp
+# kafka-charm
 
-It's a snap. It's a charm. It's a schnapp.
-
-This project compiles Kafka 2.2.1 from source into a snap and embeds that into
-a charm that then operates it. Because the snap is installed locally, there is
-no concern over auto-upgrades in snaps.
+This charm will use deb package from Ubuntu private PPA.
 
 # Building
 
-    make sysdeps
-    make all
+    cd src
+    charm build
 
-Will build the Kafka snap, and then the charm in `charm/builds/kafka`.
+Will build the Kafka charm, and then the charm in `/tmp/charm-builds`.
 
 # Operating
 
-This charm does not require any configuration. It relates to zookeeper and
-scales horizontally by adding units. It supports Juju storage.
+This charm require the private ppa configuration. It relates to zookeeper and
+scales horizontally by adding units.
 
-The snap uses strict confinement with the removable-media plug to support
-storage.
-
-    juju deploy ./charm/builds/kafka
+    juju deploy /tmp/charm-builds/kafka
     juju deploy zookeeper
     juju relate kafka zookeeper
-
-The charm also supports storage:
-
-    juju add-storage kafka/0 logs=1G
 
 # Notes
 
@@ -35,7 +24,7 @@ The Kafka charm requires at least 4GB of memory.
 
 # Details
 
-Much of the charm implementation is borrowed from the Apache Bigtop kafka
+Much of the charm implementation is borrowed from the Apache kafka
 charm, but it's been heavily simplified and pared down. Jinja templating is
 used instead of Puppet, and a few helper functions that were imported from
 libraries are inlined.
