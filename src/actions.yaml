@@ -70,7 +70,7 @@
   "required": ["producer-config", "consumer-config", "topics"]
   "additionalProperties": !!bool "false"
 "reassign-topics":
-  "description": "Reaasign topics to new broker when a cluster scales out"
+  "description": "Return configuration of topics to new broker when a cluster scales out"
   "params":
     "broker":
       "type": "string"
@@ -79,4 +79,12 @@
       "type": "string"
       "description": "Base 64 encoded Json file contains the topics reassignment"
   "required": ["broker", "topics-json"]
+  "additionalProperties": !!bool "false"
+"reassign-topics-execute":
+  "description": "Reaasign topics to new broker when a cluster scales out"
+  "params":
+    "reassign-partitions":
+      "type": "string"
+      "description": "Base 64 encoded Json file contains the partition reassignment"
+  "required": ["reassign-partitions"]
   "additionalProperties": !!bool "false"

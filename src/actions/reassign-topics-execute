@@ -32,20 +32,18 @@ if not is_state('kafka.started'):
 
 
 # Grab the business
-topicfilecontent = json.loads(base64.b64decode(hookenv.action_get('topics-json')).decode("utf-8"))
-broker = hookenv.action_get('broker')
+reassigncontent = json.loads(base64.b64decode(hookenv.action_get('reassign-partitions')).decode("utf-8"))
 ssl_properties = os.path.join(KAFKA_APP_DATA, 'client-ssl.properties')
-with open('/tmp/topics-to-move-json-file', 'w') as outfile:
-    json.dump(topicfilecontent, outfile)
+with open('/tmp/reassignment-json-file', 'w') as outfile:
+    json.dump(reassigncontent, outfile)
 
 # Write to the topic if kafka is running
 if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE):
     zookeepers = kafkautils.get_zookeepers()
     try:
         output = subprocess.check_output(['/usr/lib/kafka/bin/kafka-reassign-partitions.sh',
-                              '--generate',
-                              '--topics-to-move-json-file', '/tmp/topics-to-move-json-file',
-                              '--broker-list', broker,
+                              '--execute',
+                              '--reassignment-json-file', '/tmp/reassignment-json-file',
                               '--zookeeper', zookeepers])
     except subprocess.CalledProcessError as e:
         kafkautils.fail('Kafka command failed: {}'.format(e.output))
