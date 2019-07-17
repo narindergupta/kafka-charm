@@ -3,8 +3,6 @@ includes:
 - "layer:options"
 - 'interface:zookeeper'
 - 'interface:kafka'
-- 'interface:tls-certificates'
-- 'layer:tls-client'
 - 'layer:apt'
 - 'interface:nrpe-external-master'
 - 'interface:local-monitors'
