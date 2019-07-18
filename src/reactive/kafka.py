@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from charms.layer.kafka import Kafka, KAFKA_PORT
+from charms.layer.kafka import Kafka
 
 from charmhelpers.core import hookenv, unitdata
 
@@ -40,9 +40,20 @@ def upgrade_charm():
     remove_state('kafka.started')
 
 
+@when_not(
+    'kafka.ca.keystore.saved',
+    'kafka.server.keystore.saved'
+)
+@when('apt.installed.kafka')
+def waiting_for_certificates():
+    hookenv.status_set('waiting', 'waiting for easyrsa relation')
+
+
 @when(
     'apt.installed.kafka',
-    'zookeeper.ready'
+    'zookeeper.ready',
+    'kafka.ca.keystore.saved',
+    'kafka.server.keystore.saved'
 )
 @when_not('kafka.started')
 def configure_kafka(zk):
@@ -52,7 +63,7 @@ def configure_kafka(zk):
     kafka = Kafka()
     zks = zk.zookeepers()
     kafka.install(zk_units=zks, log_dir=log_dir)
-    kafka.open_ports()
+    hookenv.open_port(hookenv.config()['port'])
     set_state('kafka.started')
     hookenv.status_set('active', 'ready')
     # set app version string for juju status output
@@ -96,7 +107,7 @@ def configure_kafka_zookeepers(zk):
 def stop_kafka_waiting_for_zookeeper_ready():
     hookenv.status_set('maintenance', 'zookeeper not ready, stopping kafka')
     kafka = Kafka()
-    kafka.close_ports()
+    hookenv.close_port(hookenv.config()['port'])
     kafka.stop()
     remove_state('kafka.started')
     hookenv.status_set('waiting', 'waiting for zookeeper to become ready')
@@ -104,7 +115,7 @@ def stop_kafka_waiting_for_zookeeper_ready():
 
 @when('client.joined', 'zookeeper.ready')
 def serve_client(client, zookeeper):
-    client.send_port(KAFKA_PORT)
+    client.send_port(hookenv.config()['port'])
     client.send_zookeepers(zookeeper.zookeepers())
 
     hookenv.log('Sent Kafka configuration to client')

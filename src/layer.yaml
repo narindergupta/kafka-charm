@@ -3,11 +3,15 @@ includes:
 - "layer:options"
 - 'interface:zookeeper'
 - 'interface:kafka'
+- 'interface:tls-certificates'
+- 'layer:tls-client'
 - 'layer:apt'
+- "layer:nagios"
 - 'interface:nrpe-external-master'
 - 'interface:local-monitors'
 options:
   apt:
     packages:
     - kafka
+repo: https://github.com/narindergupta/kafka-charm.git
 is: "kafka"

@@ -28,7 +28,7 @@ from charms.reactive.relations import RelationBase
 
 from charms import apt
 
-KAFKA_PORT = 9092
+KAFKA_PORT = 9093
 KAFKA_APP = 'kafka'
 KAFKA_SERVICE = '{}.service'.format(KAFKA_APP)
 KAFKA_APP_DATA = '/etc/{}'.format(KAFKA_APP)
@@ -36,18 +36,6 @@ KAFKA_LOGS = '/var/lib/{}'.format(KAFKA_APP)
 
 
 class Kafka(object):
-    def open_ports(self):
-        '''
-        Attempts to open the Kafka port.
-        '''
-        hookenv.open_port(KAFKA_PORT)
-
-    def close_ports(self):
-        '''
-        Attempts to close the Kafka port.
-        '''
-        hookenv.close_port(KAFKA_PORT)
-
     def install(self, zk_units=[], log_dir='logs'):
         '''
         Generates client-ssl.properties and server.properties with the current
@@ -69,7 +57,7 @@ class Kafka(object):
 
         context = {
             'broker_id': os.environ['JUJU_UNIT_NAME'].split('/', 1)[1],
-            'port': KAFKA_PORT,
+            'port': config['port'],
             'zookeeper_connection_string': zk_connect,
             'log_dirs': log_dir,
             'keystore_password': keystore_password(),
@@ -86,6 +74,7 @@ class Kafka(object):
                 'kafka.client.jks'
             ),
             'bind_addr': hookenv.unit_private_ip(),
+            'adv_bind_addr': hookenv.unit_public_ip(),
             'auto_create_topics': config['auto_create_topics'],
             'default_partitions': config['default_partitions'],
             'default_replication_factor': config['default_replication_factor'],

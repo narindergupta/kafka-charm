@@ -83,3 +83,8 @@ options:
     default: '.10'
     description: |-
       The critical threshold for average idle percentage of a network processor
+  port:
+    type: int
+    default: 9093
+    description: |-
+      Port to run the Kafka services on
