@@ -19,7 +19,7 @@ import re
 import socket
 
 from pathlib import Path
-from base64 import b64encode
+from base64 import b64encode, b64decode
 
 from charmhelpers.core import hookenv, host
 from charmhelpers.core.templating import render
@@ -95,6 +95,11 @@ class Kafka(object):
             perms=0o644,
             context=context
         )
+
+        extraconfig = b64decode(config['extra_config']).decode("utf-8")
+        with open(os.path.join(KAFKA_APP_DATA, 'server.properties'), "a") as outfile:
+            outfile.write(extraconfig)
+            outfile.close()
 
         if log_dir:
             os.makedirs(log_dir, mode=0o755, exist_ok=True)

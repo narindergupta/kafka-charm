@@ -16,6 +16,19 @@ options:
     description: |-
       Default replication factor for automatically created topics
       (default.replication.factor)
+  extra_config:
+    default: |-
+      "bnVtLm5ldHdvcmsudGhyZWFkcz0zCm51bS5pby50aHJlYWRzPTgKc29ja2V0LnNlbmQuYnVmZmVy
+       LmJ5dGVzPTEwMjQwMApzb2NrZXQucmVjZWl2ZS5idWZmZXIuYnl0ZXM9MTAyNDAwCnNvY2tldC5y
+       ZXF1ZXN0Lm1heC5ieXRlcz0xMDQ4NTc2MDAKbnVtLnJlY292ZXJ5LnRocmVhZHMucGVyLmRhdGEu
+       ZGlyPTEKb2Zmc2V0cy50b3BpYy5yZXBsaWNhdGlvbi5mYWN0b3I9MQp0cmFuc2FjdGlvbi5zdGF0
+       ZS5sb2cucmVwbGljYXRpb24uZmFjdG9yPTEKdHJhbnNhY3Rpb24uc3RhdGUubG9nLm1pbi5pc3I9
+       MQpsb2cucmV0ZW50aW9uLmhvdXJzPTE2OApsb2cuc2VnbWVudC5ieXRlcz0xMDczNzQxODI0Cmxv
+       Zy5yZXRlbnRpb24uY2hlY2suaW50ZXJ2YWwubXM9MzAwMDAwCnpvb2tlZXBlci5jb25uZWN0aW9u
+       LnRpbWVvdXQubXM9NjAwMApncm91cC5pbml0aWFsLnJlYmFsYW5jZS5kZWxheS5tcz0wCgoK"
+    type: string
+    description: |-
+      Base 64 encodede string for server properties tuning file.
 
   # TLS options
   subject_alt_names:
