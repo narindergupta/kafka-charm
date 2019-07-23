@@ -70,7 +70,8 @@
   "required": ["producer-config", "consumer-config", "topics"]
   "additionalProperties": !!bool "false"
 "reassign-topics":
-  "description": "Return configuration of topics to new broker when a cluster scales out"
+  "description": "Return configuration of topics to new broker when a cluster scales\
+    \ out"
   "params":
     "broker":
       "type": "string"
@@ -87,4 +88,18 @@
       "type": "string"
       "description": "Base 64 encoded Json file contains the partition reassignment"
   "required": ["reassign-partitions"]
+  "additionalProperties": !!bool "false"
+"perf-test":
+  "description": "This will run the performance test on the kafka"
+  "params":
+    "topic":
+      "type": "string"
+      "description": "Topic name to be used for running test. New topic would be created."
+    "messages":
+      "type": "integer"
+      "description": "Number of messages needs to created for testing."
+    "recordsize":
+      "type": "integer"
+      "description": "size of record in bytes used to send in topic."
+  "required": ["topic", "messages", "recordsize"]
   "additionalProperties": !!bool "false"
