@@ -1,0 +1,6 @@
+gate_bundles:
+        - kafka-ha
+smoke_bundles:
+        - kafka-ha
+tests:
+        - tests.basic_deployment.BasicDeployment
