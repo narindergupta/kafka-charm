@@ -1,6 +1,6 @@
 gate_bundles:
-        - kafka-ha
+  - bionic
 smoke_bundles:
-        - kafka-ha
+  - bionic
 tests:
-        - tests.basic_deployment.BasicDeployment
+  - tests.basic_deployment.BasicDeployment

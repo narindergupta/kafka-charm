@@ -8,8 +8,5 @@ import unittest
 import zaza.model as model
 
 class BasicDeployment(unittest.TestCase):
-    def test_kafka_deployment(self):
-        first_unit = model.get_units('kafka')[0]
-        result = model.run_on_leader('ubuntu', 'lsb_release -cs')
-        self.assertEqual(result['Code'], '0')
-        self.assertEqual(result['Stdout'].strip(), first_unit.series)
+    def test_ubuntu_series(self):
+        pass
