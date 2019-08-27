@@ -1,19 +1,16 @@
 series: bionic
+description: >
+  This is a kafka cluster that includes zookeeper.
 services:
-  zookeeper:
-    charm:  cs:~narindergupta/zookeeper
-    num_units: 3
-    options:
-      install_keys: "622CF918"
-  kafka:
-    charm:  cs:~narindergupta/kafka
-    constraints: "mem=3G"
-    num_units: 2
-    options:
-      install_keys: "622CF918"
   easyrsa:
      charm: cs:~containers/easyrsa
      num_units: 1
+  zookeeper:
+    charm:  cs:~narindergupta/zookeeper
+    num_units: 3
+  kafka:
+    charm:  cs:~narindergupta/kafka
+    num_units: 2
 relations:
 - ['kafka', 'zookeeper']
 - ['easyrsa', 'kafka']
