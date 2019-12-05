@@ -58,8 +58,7 @@ def waiting_for_certificates():
 @when_not('kafka.started')
 def configure_kafka(zk):
     hookenv.status_set('maintenance', 'setting up kafka')
-    log_dir = unitdata.kv().get('kafka.storage.log_dir')
-    data_changed('kafka.storage.log_dir', log_dir)
+    log_dir = hookenv.config()['log_dir']
     kafka = Kafka()
     zks = zk.zookeepers()
     kafka.install(zk_units=zks, log_dir=log_dir)
@@ -89,10 +88,9 @@ def configure_kafka_zookeepers(zk):
     changes, restart Kafka and set appropriate status messages.
     """
     zks = zk.zookeepers()
-    log_dir = unitdata.kv().get('kafka.storage.log_dir')
-    if not(any((
-            data_changed('zookeepers', zks),
-            data_changed('kafka.storage.log_dir', log_dir)))):
+    log_dir = hookenv.config()['log_dir']
+    if not((
+            data_changed('zookeepers', zks))):
         return
 
     hookenv.log('Checking Zookeeper configuration')
