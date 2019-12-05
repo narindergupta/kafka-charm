@@ -101,3 +101,19 @@ options:
     default: 9093
     description: |-
       Port to run the Kafka services on
+  log_dir:
+    type: string
+    default: '/var/lib/kafka/logs'
+    description: |-
+      This option will use the driectory for logs. In case of MAAS deployment
+      we should preconfigured the mount point.
+  service_environment:
+    type: string
+    default: 'KAFKA_HEAP_OPTS=-Xmx1G -Xms128M'
+    description: |-
+      This option will define the kafka service environment will into service section.
+  service_parameter:
+    type: string
+    default: 'LimitNOFILE=128000'
+    description: |-
+      This option will define the extra kafka service parameters into service section.
