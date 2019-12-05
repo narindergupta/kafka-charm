@@ -10,8 +10,13 @@ includes:
 - 'interface:nrpe-external-master'
 - 'interface:local-monitors'
 options:
+  basic:
+    packages:
+      - python3
+      - default-jre-headless
+    include_system_packages: true
   apt:
     packages:
-    - kafka
+      - kafka
 repo: https://github.com/narindergupta/kafka-charm.git
 is: "kafka"
