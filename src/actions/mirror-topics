@@ -30,20 +30,24 @@ if not is_state('kafka.started'):
 
 
 # Grab the business
-topic_name = hookenv.action_get('whitelist')
-data = hookenv.action_get('data')
-ssl_properties = os.path.join(KAFKA_APP_DATA, 'client-ssl.properties')
+producerconfig = json.loads(base64.b64decode(hookenv.action_get('producerconfig')).decode("utf-8"))
+consumerconfig = json.loads(base64.b64decode(hookenv.action_get('consumerconfig')).decode("utf-8"))
+with open('/tmp/producerconfig-file', 'w') as outfile:
+    json.dump(producerconfig, outfile)
+with open('/tmp/consumerconfig-file', 'w') as outfile:
+    json.dump(consumerconfig, outfile)
 
-# Write to the topic if kafka is running
+# mirror the topics if kafka is running
 if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE):
     host = subprocess.check_output(['hostname', '-s']).decode('utf8').strip()
     port = KAFKA_PORT
     zookeepers = kafkautils.get_zookeepers()
     try:
         output = subprocess.check_output(['/usr/lib/kafka/bin/kafka-mirror-maker.sh',
-                              '--producer.config', ssl_properties,
-                              '--consumer.config', ssl_properties,
-                              '--whitelist', topic_name])
+                              '--producer.config', producerconfig,
+                              '--consumer.config', consumerconfig,
+                              '--num.streams', '3',
+                              '--whitelist', ".*"])
     except subprocess.CalledProcessError as e:
         kafkautils.fail('Kafka command failed: {}'.format(e.output))
     else:

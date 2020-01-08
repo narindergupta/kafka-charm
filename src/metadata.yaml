@@ -27,11 +27,3 @@ requires:
 min-juju-version: "2.4.0"
 series:
 - bionic
-storage:
-  logs:
-    type: filesystem
-    description: Directory where log files will be stored
-    minimum-size: 20M
-    location: /media/kafka
-    multiple:
-      range: "0-1"

@@ -56,14 +56,14 @@
   "required": ["topic", "data"]
   "additionalProperties": !!bool "false"
 "mirror-topics":
-  "description": "Create a mirror for list of topic within kafka"
+  "description": "Create a mirror for list of topic between kafka clusters"
   "params":
     "producer-config":
       "type": "string"
-      "description": "where from copy the topics"
+      "description": "Base 64 encoded producer config file"
     "consumer-config":
       "type": "string"
-      "description": "where to copy the topics"
+      "description": "Base 64 encoded consumer config file"
     "topics":
       "type": "string"
       "description": "Topic name needs to be mirrored"

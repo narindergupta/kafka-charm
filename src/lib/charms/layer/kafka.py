@@ -33,6 +33,7 @@ KAFKA_APP = 'kafka'
 KAFKA_SERVICE = '{}.service'.format(KAFKA_APP)
 KAFKA_APP_DATA = '/etc/{}'.format(KAFKA_APP)
 KAFKA_LOGS = '/var/lib/{}'.format(KAFKA_APP)
+KAFKA_SERVICE_CONF = '/lib/systemd/system/'
 
 
 class Kafka(object):
@@ -49,11 +50,7 @@ class Kafka(object):
         zk_connect = ','.join(zks)
 
         config = hookenv.config()
-        if log_dir is None:
-            log_dir = os.path.join(
-                KAFKA_LOGS,
-                'logs'
-            )
+        log_dir = config['log_dir']
 
         context = {
             'broker_id': os.environ['JUJU_UNIT_NAME'].split('/', 1)[1],
@@ -78,6 +75,8 @@ class Kafka(object):
             'auto_create_topics': config['auto_create_topics'],
             'default_partitions': config['default_partitions'],
             'default_replication_factor': config['default_replication_factor'],
+            'service_environment': config['service_environment'],
+            'service_parameter': config['service_parameter'],
         }
 
         render(
@@ -91,6 +90,14 @@ class Kafka(object):
         render(
             source='server.properties',
             target=os.path.join(KAFKA_APP_DATA, 'server.properties'),
+            owner='root',
+            perms=0o644,
+            context=context
+        )
+
+        render(
+            source='kafka.service',
+            target=os.path.join(KAFKA_SERVICE_CONF, 'kafka.service'),
             owner='root',
             perms=0o644,
             context=context
