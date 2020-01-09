@@ -22,7 +22,7 @@ import subprocess
 from charmhelpers.core import hookenv, host
 from charms.reactive import is_state
 
-from charms.layer.kafka import KAFKA_PORT, KAFKA_SERVICE, KAFKA_APP_DATA
+from charms.layer.kafka import KAFKA_SERVICE
 
 
 if not is_state('kafka.started'):
@@ -39,9 +39,6 @@ with open('/tmp/consumerconfig-file', 'w') as outfile:
 
 # mirror the topics if kafka is running
 if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE):
-    host = subprocess.check_output(['hostname', '-s']).decode('utf8').strip()
-    port = KAFKA_PORT
-    zookeepers = kafkautils.get_zookeepers()
     try:
         output = subprocess.check_output(['/usr/lib/kafka/bin/kafka-mirror-maker.sh',
                               '--producer.config', producerconfig,

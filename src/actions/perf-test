@@ -23,15 +23,14 @@ from charmhelpers.core import hookenv, host
 from charms.reactive import is_state
 from time import time
 
-from charms.layer.kafka import KAFKA_SERVICE, KAFKA_APP_DATA, KAFKA_PORT
+from charms.layer.kafka import KAFKA_SERVICE, KAFKA_APP_DATA
 
 
 if not is_state('kafka.started'):
     kafkautils.fail('Kafka service not yet ready')
 
 
-# Define smoke test params
-# # Define smoke test params
+# Define perf test params
 perf_messsages = hookenv.action_get('messages')
 record_size = hookenv.action_get('recordsize')
 topic_name = hookenv.action_get('topic')
@@ -39,22 +38,20 @@ ssl_properties = os.path.join(KAFKA_APP_DATA, 'client-ssl.properties')
 throughput = hookenv.action_get('messages')
 topic_replication = 1
 topic_partitions = 10
-
-
-# Define smoke test params
 perf_timeout = hookenv.action_get('timeout')
 
-# Smoke only when kafka is running
+# Performance only when kafka is running
 if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE):
     host = subprocess.check_output(['hostname', '-s']).decode('utf8').strip()
-    port = KAFKA_PORT
 
     # List ZKs
     zookeepers = kafkautils.get_zookeepers()
     if not zookeepers:
         kafkautils.fail('No zookeeper.connect string found')
 
-    # test producer 
+    port = kafkautils.get_kafkaport()
+
+    # create topics 
     try:
         output = subprocess.check_call(['/usr/bin/kafka-topics',
                         '--zookeeper', zookeepers, '--create',
