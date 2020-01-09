@@ -24,7 +24,7 @@ import subprocess
 from charmhelpers.core import hookenv, host
 from charms.reactive import is_state
 
-from charms.layer.kafka import KAFKA_PORT, KAFKA_SERVICE, KAFKA_APP_DATA
+from charms.layer.kafka import KAFKA_SERVICE, KAFKA_APP_DATA
 
 
 if not is_state('kafka.started'):

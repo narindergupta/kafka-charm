@@ -28,11 +28,9 @@ from charms.reactive.relations import RelationBase
 
 from charms import apt
 
-KAFKA_PORT = 9093
 KAFKA_APP = 'kafka'
 KAFKA_SERVICE = '{}.service'.format(KAFKA_APP)
 KAFKA_APP_DATA = '/etc/{}'.format(KAFKA_APP)
-KAFKA_LOGS = '/var/lib/{}'.format(KAFKA_APP)
 KAFKA_SERVICE_CONF = '/lib/systemd/system/'
 
 
@@ -78,6 +76,38 @@ class Kafka(object):
             'service_environment': config['service_environment'],
             'service_parameter': config['service_parameter'],
         }
+
+        render(
+            source='consumer.properties',
+            target=os.path.join(KAFKA_APP_DATA, 'consumer.properties'),
+            owner='root',
+            perms=0o400,
+            context=context
+        )
+
+        render(
+            source='producer.properties',
+            target=os.path.join(KAFKA_APP_DATA, 'producer.properties'),
+            owner='root',
+            perms=0o400,
+            context=context
+        )
+
+        render(
+            source='connect-standalone.properties',
+            target=os.path.join(KAFKA_APP_DATA, 'connect-standalone.properties'),
+            owner='root',
+            perms=0o400,
+            context=context
+        )
+
+        render(
+            source='connect-distributed.properties',
+            target=os.path.join(KAFKA_APP_DATA, 'connect-distributed.properties'),
+            owner='root',
+            perms=0o400,
+            context=context
+        )
 
         render(
             source='client-ssl.properties',
