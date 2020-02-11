@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+from pathlib import Path
 from charms.layer.kafka import Kafka
 
 from charmhelpers.core import hookenv, unitdata
 
 from charms.reactive import (when, when_not, hook,
-                             remove_state, set_state)
+                             remove_state, set_state, endpoint_from_flag)
 from charms.reactive.helpers import data_changed
 
 
@@ -117,3 +119,15 @@ def serve_client(client, zookeeper):
     client.send_zookeepers(zookeeper.zookeepers())
 
     hookenv.log('Sent Kafka configuration to client')
+
+
+@when('kafka.started',
+      'endpoint.grafana.joined')
+def register_grafana_dashboards():
+    grafana = endpoint_from_flag('endpoint.grafana.joined')
+
+    # load automatic dashboards
+    dash_dir = Path('templates/grafana/autoload')
+    for dash_file in dash_dir.glob('*.json'):
+        dashboard = dash_file.read_text()
+        grafana.register_dashboard(dash_file.stem, json.loads(dashboard))

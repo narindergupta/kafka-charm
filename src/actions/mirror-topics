@@ -40,7 +40,8 @@ with open('/tmp/consumerconfig-file', 'w') as outfile:
 # mirror the topics if kafka is running
 if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE):
     try:
-        output = subprocess.check_output(['/usr/lib/kafka/bin/kafka-mirror-maker.sh',
+        output = subprocess.check_output([
+                              '/usr/lib/kafka/bin/kafka-mirror-maker.sh',
                               '--producer.config', producerconfig,
                               '--consumer.config', consumerconfig,
                               '--num.streams', '3',

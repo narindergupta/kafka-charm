@@ -19,6 +19,8 @@ provides:
   local-monitors:
     interface: local-monitors
     scope: container
+  grafana:
+    interface: grafana-dashboard
 requires:
   certificates:
     interface: tls-certificates

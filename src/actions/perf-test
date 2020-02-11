@@ -43,6 +43,7 @@ perf_timeout = hookenv.action_get('timeout')
 # Performance only when kafka is running
 if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE):
     host = subprocess.check_output(['hostname', '-s']).decode('utf8').strip()
+    hostip = hookenv.unit_public_ip()
 
     # List ZKs
     zookeepers = kafkautils.get_zookeepers()
@@ -76,7 +77,7 @@ if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE)
     # Test Consumer
     try:
         output = subprocess.check_call(['/usr/lib/kafka/bin/kafka-consumer-perf-test.sh',
-                        '--broker-list', '{}:{}'.format(host, port),
+                        '--broker-list', '{}:{}'.format(hostip, port),
                         '--messages', str(perf_messsages),
                         '--topic', topic_name,
                         '--consumer.config', ssl_properties,

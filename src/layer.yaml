@@ -9,6 +9,7 @@ includes:
 - "layer:nagios"
 - 'interface:nrpe-external-master'
 - 'interface:local-monitors'
+- 'interface:grafana-dashboard'
 options:
   basic:
     packages:

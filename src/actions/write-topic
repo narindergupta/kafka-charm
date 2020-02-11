@@ -37,11 +37,12 @@ ssl_properties = os.path.join(KAFKA_APP_DATA, 'client-ssl.properties')
 # Write to the topic if kafka is running
 if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE):
     host = subprocess.check_output(['hostname', '-s']).decode('utf8').strip()
+    hostip = hookenv.unit_public_ip()
     port = kafkautils.get_kafkaport()
     zookeepers = kafkautils.get_zookeepers()
     try:
         output = subprocess.check_output(['/usr/bin/kafka-console-producer',
-                              '--broker-list', '{}:{}'.format(host, port),
+                              '--broker-list', '{}:{}'.format(hostip, port),
                               '--topic', topic_name,
                               '--producer.config', ssl_properties],
                               input=bytes(data, 'UTF-8'))

@@ -103,3 +103,8 @@
       "description": "size of record in bytes used to send in topic."
   "required": ["topic", "messages", "recordsize"]
   "additionalProperties": !!bool "false"
+upgrade-kafka:
+  description: Upgrade kafka installation
+show-upgrade:
+  description: Upgrade kafka installation
+

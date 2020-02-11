@@ -75,6 +75,11 @@ class Kafka(object):
             'default_replication_factor': config['default_replication_factor'],
             'service_environment': config['service_environment'],
             'service_parameter': config['service_parameter'],
+            'inter_broker_protocol_version':
+                config.get('inter_broker_protocol_version'),
+            'log_message_format_version':
+                config.get('log_message_format_version'),
+
         }
 
         render(
