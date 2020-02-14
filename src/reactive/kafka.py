@@ -27,12 +27,16 @@ from charms.reactive.helpers import data_changed
 @when('apt.installed.kafka')
 @when_not('zookeeper.joined')
 def waiting_for_zookeeper():
+    kafka = Kafka()
+    kafka.stop()
     hookenv.status_set('blocked', 'waiting for relation to zookeeper')
 
 
 @when('apt.installed.kafka', 'zookeeper.joined')
 @when_not('kafka.started', 'zookeeper.ready')
 def waiting_for_zookeeper_ready(zk):
+    kafka = Kafka()
+    kafka.stop()
     hookenv.status_set('waiting', 'waiting for zookeeper to become ready')
 
 
@@ -65,11 +69,12 @@ def configure_kafka(zk):
     zks = zk.zookeepers()
     kafka.install(zk_units=zks, log_dir=log_dir)
     hookenv.open_port(hookenv.config()['port'])
-    set_state('kafka.started')
-    hookenv.status_set('active', 'ready')
     # set app version string for juju status output
     kafka_version = kafka.version()
     hookenv.application_version_set(kafka_version)
+    hookenv.status_set('active', 'ready')
+    kafka.restart()
+    set_state('kafka.started')
 
 
 @when('config.changed', 'zookeeper.ready')
@@ -99,6 +104,7 @@ def configure_kafka_zookeepers(zk):
     hookenv.status_set('maintenance', 'updating zookeeper instances')
     kafka = Kafka()
     kafka.install(zk_units=zks, log_dir=log_dir)
+    kafka.restart()
     hookenv.status_set('active', 'ready')
 
 
@@ -128,6 +134,6 @@ def register_grafana_dashboards():
 
     # load automatic dashboards
     dash_dir = Path('templates/grafana/autoload')
-    for dash_file in dash_dir.glob('*.json'):
+    for dash_file in dash_dir.glob('kafka.json'):
         dashboard = dash_file.read_text()
         grafana.register_dashboard(dash_file.stem, json.loads(dashboard))

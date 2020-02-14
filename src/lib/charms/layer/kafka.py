@@ -32,6 +32,7 @@ KAFKA_APP = 'kafka'
 KAFKA_SERVICE = '{}.service'.format(KAFKA_APP)
 KAFKA_APP_DATA = '/etc/{}'.format(KAFKA_APP)
 KAFKA_SERVICE_CONF = '/lib/systemd/system/'
+KAFKA_BIN = '/usr/lib/kafka/bin/'
 
 
 class Kafka(object):
@@ -75,12 +76,17 @@ class Kafka(object):
             'default_replication_factor': config['default_replication_factor'],
             'service_environment': config['service_environment'],
             'service_parameter': config['service_parameter'],
+            'kafka_jmx_port': config['kafka_jmx_port'],
+            'kafka_jmx_opts': config['kafka_jmx_opts'],
             'inter_broker_protocol_version':
                 config.get('inter_broker_protocol_version'),
             'log_message_format_version':
                 config.get('log_message_format_version'),
-
         }
+
+        if log_dir:
+            os.makedirs(log_dir, mode=0o755, exist_ok=True)
+            shutil.chown(log_dir, user='kafka')
 
         render(
             source='consumer.properties',
@@ -138,16 +144,26 @@ class Kafka(object):
             context=context
         )
 
+        render(
+            source='broker.env',
+            target=os.path.join(KAFKA_APP_DATA, 'broker.env'),
+            owner='root',
+            perms=0o644,
+            context=context
+        )
+
+        render(
+            source='kafka-server-wrapper.sh',
+            target=os.path.join(KAFKA_BIN, 'kafka-server-wrapper.sh'),
+            owner='root',
+            perms=0o755,
+            context=context
+        )
+
         extraconfig = b64decode(config['extra_config']).decode("utf-8")
         with open(os.path.join(KAFKA_APP_DATA, 'server.properties'), "a") as outfile:
             outfile.write(extraconfig)
             outfile.close()
-
-        if log_dir:
-            os.makedirs(log_dir, mode=0o755, exist_ok=True)
-            shutil.chown(log_dir, user='kafka')
-
-        self.restart()
 
     def restart(self):
         '''
