@@ -33,6 +33,12 @@ KAFKA_SERVICE = '{}.service'.format(KAFKA_APP)
 KAFKA_APP_DATA = '/etc/{}'.format(KAFKA_APP)
 KAFKA_SERVICE_CONF = '/lib/systemd/system/'
 KAFKA_BIN = '/usr/lib/kafka/bin/'
+certs_dir = Path('/etc/kafka')
+ca_crt_path = '/usr/local/share/ca-certificates/kafka.crt'
+server_crt_path = certs_dir / 'server.crt'
+server_key_path = certs_dir / 'server.key'
+client_crt_path = certs_dir / 'client.crt'
+client_key_path = certs_dir / 'client.key'
 
 
 class Kafka(object):
@@ -218,10 +224,15 @@ def keystore_password():
         KAFKA_APP_DATA,
         'keystore.secret'
     )
+    config = hookenv.config()
     if not os.path.isfile(path):
         with os.fdopen(
                 os.open(path, os.O_WRONLY | os.O_CREAT, 0o440),
                 'wb') as f:
+            if config['ssl_key_password']:
+                token = config['ssl_key_password'].encode("utf-8")
+            else:
+                token = b64encode(os.urandom(32))
             token = b64encode(os.urandom(32))
             f.write(token)
             password = token.decode('ascii')
