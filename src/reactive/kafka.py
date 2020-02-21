@@ -68,6 +68,7 @@ def waiting_for_certificates():
     kafka = Kafka()
     kafka.stop()
     kafka.install()
+    config = hookenv.config()
     if config['ssl_cert']:
         set_state('certificates.available')
     else:
@@ -80,27 +81,19 @@ def send_data():
     this server.'''
     config = hookenv.config()
     if config['ssl_cert']:
-        with open(server_crt_path, "wb") as fs:
-            os.chmod(server_crt_path, stat.S_IRUSR |
+        for certs_path in ('server_crt_path', 'client_crt_path'):
+            with open(certs_path, "wb") as fs:
+                os.chmod(certs_path, stat.S_IRUSR |
                          stat.S_IWUSR |
                          stat.S_IRGRP |
                          stat.S_IROTH)
-            fs.write(base64.b64decode(config['ssl_cert']))
-        with open(client_crt_path, "wb") as fc:
-            os.chmod(client_crt_path, stat.S_IRUSR |
-                         stat.S_IWUSR |
-                         stat.S_IRGRP |
-                         stat.S_IROTH)
-            fc.write(base64.b64decode(config['ssl_cert']))
-        if config['ssl_key']:
-            with open(server_key_path, "wb") as fks:
-                os.chmod(server_key_path, stat.S_IWUSR |
+                fs.write(base64.b64decode(config['ssl_cert']))
+            if config['ssl_key']:
+                with open(certs_path, "wb") as fks:
+                    os.chmod(certs_path, stat.S_IWUSR |
                               stat.S_IWUSR )
-                fks.write(base64.b64decode(config['ssl_key']))
-            with open(client_key_path, "wb") as fkc:
-                os.chmod(client_key_path, stat.S_IWUSR |
-                              stat.S_IWUSR )
-                fkc.write(base64.b64decode(config['ssl_key']))
+                    fks.write(base64.b64decode(config['ssl_key']))
+        import_srv_crt_to_keystore()
         if config['ssl_ca']:
             with open(ca_crt_path, "wb") as fca:
                 os.chmod(ca_crt_path, stat.S_IRUSR |
@@ -108,7 +101,6 @@ def send_data():
                          stat.S_IRGRP |
                          stat.S_IROTH)
                 fca.write(base64.b64decode(config['ssl_ca']))
-        import_srv_crt_to_keystore()
         import_ca_crt_to_keystore()
     else:
         common_name = hookenv.unit_private_ip()
@@ -139,6 +131,7 @@ def send_data():
 
 @when('tls_client.certs.changed')
 def import_srv_crt_to_keystore():
+    config = hookenv.config()
     for cert_type in ('server', 'client'):
         password = keystore_password()
         crt_path = os.path.join(
@@ -161,8 +154,9 @@ def import_srv_crt_to_keystore():
                     'kafka_{}_certificate'.format(cert_type),
                     cert
                 ):
-                    log('server certificate of key file missing')
-                    return
+                    if not config['ssl_key_password']:
+                        log('server certificate of key file missing')
+                        return
 
             with open(key_path, 'rt') as f:
                 loaded_key = crypto.load_privatekey(
@@ -177,7 +171,8 @@ def import_srv_crt_to_keystore():
                     KAFKA_APP_DATA,
                     "kafka.{}.jks".format(cert_type)
                 )
-
+                if os.path.isfile(keystore_path):
+                    os.remove(keystore_path)
                 pkcs12 = crypto.PKCS12Type()
                 pkcs12.set_certificate(loaded_cert)
                 pkcs12.set_privatekey(loaded_key)
@@ -201,24 +196,30 @@ def import_srv_crt_to_keystore():
                     '-deststorepass', password,
                     '--noprompt'
                 ])
-
-                remove_state('kafka.started')
-                remove_state('tls_client.certs.changed')
                 set_state('kafka.{}.keystore.saved'.format(cert_type))
+
+        remove_state('kafka.started')
+        remove_state('tls_client.certs.changed')
 
 
 @when('tls_client.ca_installed')
 @when_not('kafka.ca.keystore.saved')
 def import_ca_crt_to_keystore():
-    if os.path.isfile(ca_path):
+    config = hookenv.config()
+    if os.path.isfile(ca_crt_path):
         with open(ca_crt_path, 'rt') as f:
             changed = data_changed('ca_certificate', f.read())
+            if not changed:
+                if config['ssl_key_password']:
+                    changed = 'true'
 
         if changed:
             ca_keystore = os.path.join(
                 KAFKA_APP_DATA,
                 "kafka.server.truststore.jks"
             )
+            if os.path.isfile(ca_keystore):
+                os.remove(ca_keystore)
             check_call([
                 'keytool',
                 '-import', '-trustcacerts', '-noprompt',
@@ -239,6 +240,44 @@ def update_certificates():
     # it will update.
     send_data()
     remove_state('config.changed.subject_alt_names')
+
+
+@when('config.changed.ssl_key_password', 'kafka.started')
+def change_ssl_key():
+    kafka = Kafka()
+    kafka.stop()
+    config = hookenv.config()
+    password = keystore_password()
+    new_password = config['ssl_key_password']
+    for jks_type in ('server', 'client', 'server.truststore'):
+        jks_path = os.path.join(
+            KAFKA_APP_DATA,
+            "kafka.{}.jks".format(jks_type)
+        )
+        log('modifying password')
+        # import the pkcs12 into the keystore
+        check_call([
+            'keytool',
+            '-v', '-storepasswd',
+            '-new', new_password,
+            '-storepass', password,
+            '-keystore', jks_path
+        ])
+    path = os.path.join(
+        KAFKA_APP_DATA,
+        'keystore.secret'
+    )
+    if os.path.isfile(path):
+        os.remove(path)
+        with os.fdopen(
+                os.open(path, os.O_WRONLY | os.O_CREAT, 0o440),
+                'wb') as f:
+            if config['ssl_key_password']:
+                token = config['ssl_key_password'].encode("utf-8")
+                f.write(token)
+    import_srv_crt_to_keystore()
+    import_ca_crt_to_keystore()
+    remove_state('config.changed.ssl_key_password')
 
 
 @when('tls_client.ca.written')
@@ -273,10 +312,11 @@ def configure_kafka(zk):
 def config_changed(zk):
     for k, v in hookenv.config().items():
         if k.startswith('nagios') and data_changed('kafka.config.{}'.format(k),
-                                                   v):
+                                                    v):
             # Trigger a reconfig of nagios if relation established
             remove_state('kafka.nrpe_helper.registered')
     # Something must have changed if this hook fired, trigger reconfig
+    remove_state('config.changed')
     remove_state('kafka.started')
 
 

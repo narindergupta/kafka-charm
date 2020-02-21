@@ -3,14 +3,35 @@ description: >
   This is a kafka cluster that includes zookeeper.
 services:
   easyrsa:
-     charm: cs:~containers/easyrsa
-     num_units: 1
+    charm: cs:~containers/easyrsa
+    num_units: 1
   zookeeper:
-    charm:  cs:~narindergupta/zookeeper
+    charm: cs:~narindergupta/zookeeper
     num_units: 3
+    options:
   kafka:
-    charm:  cs:~narindergupta/kafka
+    charm: cs:~narindergupta/kafka
     num_units: 2
+    options:
+      service_environment: '-Xmx512M -Xms64M'
+      service_parameter: 'LimitNOFILE=12800'
+  jmx-exporter:
+    charm: cs:~yellow/jmx-exporter-6
+    options:
+      config: |-
+        jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:9999/jmxrmi
+        lowercaseOutputName: true
+        rules:
+        - pattern: ".*"
+  telegraf:
+    charm: cs:telegraf
+    options:
+      extra_plugins: |-
+        [[inputs.prometheus]]
+          ## An array of urls to scrape metrics from.
+          urls = ["http://localhost:4081/metrics"]
 relations:
 - ['kafka', 'zookeeper']
 - ['easyrsa', 'kafka']
+- ['jmx-exporter', 'kafka:juju-info']
+- [ "kafka:juju-info", "telegraf:juju-info" ]

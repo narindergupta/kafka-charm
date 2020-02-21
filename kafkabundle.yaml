@@ -1,0 +1,290 @@
+series: bionic
+variables:
+  # nagios-context should be bootstack-customerA-locationB-cloudname
+  nagios-context: &nagios-context verizon-kafka
+  landscape-origin:   &landscape-origin   ppa:landscape/19.01
+machines:
+  "0": #for Landscape
+    series: bionic
+    constraints: "mem=4G"
+  "1": #for Nagios
+    series: bionic
+    constraints: "mem=4G"
+  "2": #for Prometheus2
+    series: bionic
+    constraints: "mem=4G"
+  "3": #for elasticsearch
+    series: bionic
+    constraints: "mem=8G"
+  "4": #for Prometheus2
+    series: bionic
+    constraints: "mem=4G"
+  "5": #for Prometheus2
+    series: bionic
+    constraints: "mem=4G"
+  "6": #for Prometheus2
+    series: bionic
+    constraints: "mem=4G"
+#  "7": #for Prometheus2
+#    series: bionic
+#    constraints: "mem=4G"
+#  "8": #for Prometheus2
+#    series: bionic
+#    constraints: "mem=4G"
+services:
+# TODO: Charm bigtop flume
+  zookeeper:
+    charm:  cs:~narindergupta/zookeeper
+    #constraints: "mem=3G"
+    num_units: 3
+    options:
+      install_sources: "deb https://narindergupta:MqS7jnkVMDWNlvSWQTHG@private-ppa.launchpad.net/ubuntu-esm/esm-apps/ubuntu bionic main"
+      install_keys: "622CF918"
+      nagios_context: prod-event-bus-ua
+      nagios_servicegroups: webops-prompt-critical,prod-event-bus-ua
+    to:
+    - 0
+    - 1
+    - 2
+ 
+  kafka:
+    #charm:  cs:~narindergupta/kafka
+    charm:  /tmp/charm-builds/kafka
+    #constraints: "mem=3G"
+    num_units: 2
+    options:
+      #subject_alt_names: testbroker.local
+      install_sources: "deb https://narindergupta:MqS7jnkVMDWNlvSWQTHG@private-ppa.launchpad.net/ubuntu-esm/esm-apps/ubuntu bionic main"
+      install_keys: "622CF918"
+      nagios_context: prod-event-bus-ua
+      nagios_servicegroups: webops-prompt-critical,prod-event-bus-ua
+      service_environment: '-Xmx512M -Xms64M'
+      service_parameter: 'LimitNOFILE=12800'
+    to:
+    - 3
+    - 4
+  confluent-schema-registry:
+    charm: cs:~narindergupta/confluent-schema-registry
+    num_units: 1
+    to:
+    - lxd:zookeeper/0
+  nrpe-kafka:
+    charm: cs:nrpe
+    options:
+      xfs_errors: "30"
+      swap: ''
+      swap_activity: ''
+      nagios_hostname_type: "host"
+      nagios_host_context: prod
+      export_nagios_definitions: true
+      load: "-w 8,8,8 -c 15,15,15"
+      hostgroups: prod
+      monitors: |-
+        monitors:
+          remote:
+            nrpe:
+              underreplicated_partitions_count:
+                command: underreplicated_partitions_count
+              offline_partitions_count:
+                command: offline_partitions_count
+              leader_election_rate:
+                command: leader_election_rate
+              avg_network_processor_idle:
+                command: avg_network_processor_idle
+  nrpe:
+    charm: cs:nrpe
+    options:
+      xfs_errors: "30"
+      swap: ''
+      swap_activity: ''
+      nagios_hostname_type: "host"
+      nagios_host_context: nonkafkaprod
+      export_nagios_definitions: true
+#  landscape-client:
+#    charm: cs:landscape-client
+#    options:
+#      account-name: narindergupta
+#      registration-key: narindergupta
+#      tags: laptop,bionic,developer
+#      #ping-url: http://landscape.example.com/ping
+#      #url: https://landscape.example.com/message-system
+#      script-users: ALL
+#      include-manager-plugins: ScriptExecution
+#      monitor-plugins: ALL
+#  easyrsa:
+#    charm: cs:~containers/easyrsa
+#    num_units: 1
+#    constraints: "mem=3G"
+#    to:
+#    - lxd:4
+  vault:
+    charm: cs:vault
+    num_units: 1
+    constraints: "mem=3G"
+    options:
+      totally-unsecure-auto-unlock: true
+      auto-generate-root-ca-cert: true
+    to:
+    - lxd:zookeeper/1
+  jmx-exporter:
+    charm: cs:~yellow/jmx-exporter-6
+    options:
+      config: |-
+        jmxUrl: service:jmx:rmi:///jndi/rmi://localhost:9999/jmxrmi
+        lowercaseOutputName: true
+
+        rules:        - pattern: ".*"
+  filebeat:
+    charm: cs:filebeat
+    options:
+      logpath: "/var/log/*.log /var/log/*/*.log /var/log/syslog"
+ 
+  telegraf:
+    charm: cs:telegraf
+    options:
+      extra_plugins: |-
+        [[inputs.prometheus]]
+          ## An array of urls to scrape metrics from.
+          urls = ["http://localhost:4081/metrics"]
+### Logging ###
+  elasticsearch:
+    charm: cs:elasticsearch
+    num_units: 1
+    options:
+      firewall_enabled: False
+      es-heap-size: 1
+    to:
+    - 3
+  graylog:
+    charm: cs:graylog
+    num_units: 1
+    options:
+      channel: '3/edge'
+    to:
+    - lxd:3
+  mongodb:
+    charm: cs:mongodb
+    num_units: 1
+    to:
+    - lxd:3
+### Monitoring ###
+  grafana:
+    charm: cs:grafana
+    num_units: 1
+    options:
+      install_method: snap
+    to:
+    - lxd:1
+  prometheus:
+    charm: cs:prometheus2
+    num_units: 1
+    to:
+    - 5
+ 
+  nagios:
+    num_units: 1
+    charm: cs:nagios
+    options:
+      ssl: only
+    to:
+    - 6
+ 
+#  canonical-livepatch:
+#    charm: cs:canonical-livepatch
+#    options:
+#      #LP Bug: 1823293
+#      snapd_refresh: max
+# 
+### Package Management ###
+#  rabbitmq-server:
+#    charm: cs:rabbitmq-server
+#    num_units: 1
+#    options:
+#      min-cluster-size: 1
+#    to:
+#    - lxd:0
+#  landscape-postgresql:
+#    charm: cs:postgresql
+#    num_units: 1
+#    options:
+#      extra_packages: python-apt postgresql-contrib postgresql-.*-debversion postgresql-plpython-.*
+#      max_connections: 500
+#      max_prepared_transactions: 500
+#    to:
+#    - lxd:0
+#  haproxy:
+#    charm: cs:haproxy
+#    expose: True
+#    num_units: 1
+#    options:
+#      services: ""
+#      source: backports
+#      ssl_cert: SELFSIGNED
+#      global_default_bind_options: "no-tlsv10"
+#      default_timeouts: "queue 60000, connect 5000, client 120000, server 120000"
+#    to:
+#    - 0
+#  landscape-server:
+#    charm: cs:landscape-server
+#    num_units: 1
+#    options:
+#      install_sources: *landscape-origin
+#    to:
+#    - lxd:0
+  mysql:
+    charm: cs:percona-cluster
+
+    num_units: 1
+    options:
+      min-cluster-size: 1
+    to:
+    - lxd:zookeeper/2
+ 
+relations:
+  - [ "kafka", "zookeeper" ]
+  - [ "graylog:elasticsearch", "elasticsearch:client" ]
+  - [ "graylog:mongodb", "mongodb:database" ]
+  - [ "graylog:juju-info", "telegraf:juju-info" ]
+  - [ "filebeat:logstash", "graylog:beats" ]
+  - [ "prometheus:grafana-source", "grafana:grafana-source" ]
+  - [ "telegraf:prometheus-client", "prometheus:target" ]
+  - [ "elasticsearch:nrpe-external-master", "nrpe:nrpe-external-master" ]
+  - [ "graylog:nrpe-external-master", "nrpe:nrpe-external-master" ]
+  - [ "mongodb:nrpe-external-master", "nrpe:nrpe-external-master" ]
+  - [ "grafana:nrpe-external-master", "nrpe:nrpe-external-master" ]
+  - [ "prometheus:nrpe-external-master", "nrpe:nrpe-external-master" ]
+  - [ "nagios:monitors", "nrpe:monitors" ]
+  - [ "nagios:monitors", "nrpe-kafka:monitors" ]
+  - [ "nagios:juju-info", "telegraf:juju-info" ]
+  - [ "nagios:juju-info", "filebeat:beats-host" ]
+#  - [ elasticsearch, landscape-client ]
+#  - [ graylog, landscape-client ]
+#  - [ mongodb, landscape-client ]
+#  - [ grafana, landscape-client ]
+#  - [ prometheus, landscape-client ]
+#  - [ "nagios:juju-info", "landscape-client:container" ]
+#  - [ "canonical-livepatch", "elasticsearch" ]
+#  - [ "canonical-livepatch", "grafana" ]
+#  - [ "canonical-livepatch", "graylog" ]
+#  - [ "canonical-livepatch", "mongodb" ]
+#  - [ "canonical-livepatch:juju-info", "nagios:juju-info" ]
+#  - [ "canonical-livepatch", "prometheus" ]
+ #Landscape services only
+#  - [ landscape-server, rabbitmq-server ]
+#  - [ landscape-server, haproxy ]
+#  - [ "haproxy:juju-info", "telegraf:juju-info" ]
+#  - [ "landscape-server:db", "landscape-postgresql:db-admin" ]
+  - [ "kafka:juju-info", "telegraf:juju-info" ]
+  - [ "zookeeper:juju-info", "telegraf:juju-info" ]
+  - ['zookeeper', 'confluent-schema-registry']
+  - ['nrpe-kafka:local-monitors', 'kafka:local-monitors']
+  - ['nrpe:local-monitors', 'zookeeper:local-monitors']
+  - ['nrpe:local-monitors', 'confluent-schema-registry:local-monitors']
+  - ['jmx-exporter', 'kafka:juju-info']
+  - ['filebeat:beats-host', 'kafka:juju-info']
+  - ['filebeat:beats-host', 'zookeeper:juju-info']
+#  - ['kafka', 'grafana']
+  - ['vault', 'mysql']
+#  - ['easyrsa', 'kafka']
+  - ['vault', 'kafka']
+#  - ['easyrsa', 'confluent-schema-registry']

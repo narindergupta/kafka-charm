@@ -94,65 +94,31 @@ class Kafka(object):
             os.makedirs(log_dir, mode=0o755, exist_ok=True)
             shutil.chown(log_dir, user='kafka')
 
-        render(
-            source='consumer.properties',
-            target=os.path.join(KAFKA_APP_DATA, 'consumer.properties'),
-            owner='root',
-            perms=0o400,
-            context=context
-        )
+        for file_config in ('consumer.properties', 'producer.properties',
+                            'connect-standalone.properties',
+                            'connect-distributed.properties',
+                            'client-ssl.properties'
+                            ):
+            render(
+                source=file_config,
+                target=os.path.join(KAFKA_APP_DATA, file_config),
+                owner='root',
+                perms=0o400,
+                context=context
+            )
 
-        render(
-            source='producer.properties',
-            target=os.path.join(KAFKA_APP_DATA, 'producer.properties'),
-            owner='root',
-            perms=0o400,
-            context=context
-        )
-
-        render(
-            source='connect-standalone.properties',
-            target=os.path.join(KAFKA_APP_DATA, 'connect-standalone.properties'),
-            owner='root',
-            perms=0o400,
-            context=context
-        )
-
-        render(
-            source='connect-distributed.properties',
-            target=os.path.join(KAFKA_APP_DATA, 'connect-distributed.properties'),
-            owner='root',
-            perms=0o400,
-            context=context
-        )
-
-        render(
-            source='client-ssl.properties',
-            target=os.path.join(KAFKA_APP_DATA, 'client-ssl.properties'),
-            owner='root',
-            perms=0o400,
-            context=context
-        )
-
-        render(
-            source='server.properties',
-            target=os.path.join(KAFKA_APP_DATA, 'server.properties'),
-            owner='root',
-            perms=0o644,
-            context=context
-        )
+        for file_config in ('server.properties', 'broker.env'):
+            render(
+                source=file_config,
+                target=os.path.join(KAFKA_APP_DATA, file_config),
+                owner='root',
+                perms=0o644,
+                context=context
+            )
 
         render(
             source='kafka.service',
             target=os.path.join(KAFKA_SERVICE_CONF, 'kafka.service'),
-            owner='root',
-            perms=0o644,
-            context=context
-        )
-
-        render(
-            source='broker.env',
-            target=os.path.join(KAFKA_APP_DATA, 'broker.env'),
             owner='root',
             perms=0o644,
             context=context
@@ -175,6 +141,7 @@ class Kafka(object):
         '''
         Restarts the Kafka service.
         '''
+        host.service_reload(KAFKA_SERVICE)
         host.service_restart(KAFKA_SERVICE)
 
     def start(self):
@@ -233,7 +200,6 @@ def keystore_password():
                 token = config['ssl_key_password'].encode("utf-8")
             else:
                 token = b64encode(os.urandom(32))
-            token = b64encode(os.urandom(32))
             f.write(token)
             password = token.decode('ascii')
     else:
