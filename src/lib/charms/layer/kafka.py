@@ -76,7 +76,7 @@ class Kafka(object):
                 'kafka.client.jks'
             ),
             'bind_addr': hookenv.unit_private_ip(),
-            'adv_bind_addr': hookenv.unit_public_ip(),
+            'adv_bind_addr': get_ingress_address('listener'),
             'auto_create_topics': config['auto_create_topics'],
             'default_partitions': config['default_partitions'],
             'default_replication_factor': config['default_replication_factor'],
@@ -228,3 +228,18 @@ def resolve_private_address(addr):
                 'Unable to resolve private-address: {}'.format(addr)
             )
         return contained.groups(0).replace('-', '.')
+
+
+def get_ingress_address(binding):
+    try:
+        network_info = hookenv.network_get(binding)
+    except NotImplementedError:
+        network_info = []
+
+    if network_info and 'ingress-addresses' in network_info:
+        # just grab the first one for now, maybe be more robust here?
+        return network_info['ingress-addresses'][0]
+    else:
+        # if they don't have ingress-addresses they are running a juju that
+        # doesn't support spaces, so just return the private address
+        return hookenv.unit_get('private-address')

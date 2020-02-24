@@ -6,7 +6,7 @@ from charmhelpers.core import hookenv
 
 from charms.reactive import remove_state
 
-from charms.layer import snap
+from charms.layer import apt
 
 
 if not hookenv.config().get('inter_broker_protocol_version'):
@@ -14,9 +14,8 @@ if not hookenv.config().get('inter_broker_protocol_version'):
 
 remove_state('kafka.nrpe_helper.installed')
 remove_state('kafka.started')
-remove_state('snap.installed.kafka')
+remove_state('apt.installed.kafka')
 
-snap.install('kafka')
-snap.connect('kafka:removable-media', 'core:removable-media')
+apt.install('kafka')
 
 hookenv.action_set({'outcome': 'success'})

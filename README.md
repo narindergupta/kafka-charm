@@ -7,7 +7,7 @@ This charm will use deb package from Ubuntu private PPA.
     cd src
     charm build
 
-Will build the Kafka charm, and then the charm in `/tmp/charm-builds`.
+Will build the Kafka charm in `/tmp/charm-builds/kafka`.
 
 # Operating
 

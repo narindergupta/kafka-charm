@@ -1,15 +1,20 @@
 name: kafka
+display-name: kafka
 summary: A distributed streaming platform
 maintainer: Narinder Gupta <narinder.gupta@canonical.com>
 description: |
-  This charm deploys a more recent version of Kafka than the bigtop charm.
+  This charm deploys a version of Kafka from user defined PPA.
   It's intended for some internal projects and is not supported for general
   community use.
 tags:
   - storage
   - streaming
   - distributed
+  - kafka
+  - message
 subordinate: false
+extra-bindings:
+  listener:
 provides:
   client:
     interface: kafka
@@ -26,6 +31,6 @@ requires:
     interface: tls-certificates
   zookeeper:
     interface: zookeeper
-min-juju-version: "2.4.0"
+min-juju-version: "2.6.0"
 series:
 - bionic
