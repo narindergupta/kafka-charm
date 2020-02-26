@@ -1,8 +1,8 @@
-##Description
+# Description
 Kafka is a high-performance, scalable, distributed messaging system.
 This charm provides version 2.2 of the Kafka application from Apache.
 
-##Overview
+# Overview
 Apache Kafka is an open-source message broker project developed by the Apache
 Software Foundation written in Scala. The project aims to provide a unified,
 high-throughput, low-latency platform for handling real-time data feeds. Learn
@@ -10,7 +10,7 @@ more at kafka.apache.org.
 
 This charm deploys version 2.2 of the Kafka component.
 
-##Deploying
+# Deploying
 This charm requires Juju 2.7 or greater. If Juju is not yet set up, please
 follow the getting-started instructions prior to deploying this charm.
 
@@ -23,12 +23,12 @@ juju deploy easyrsa
 juju add-relation kafka zookeeper
 juju add-relation kafka easyrsa
 
-##Network-Restricted Environments
+# Network-Restricted Environments
 Charms can be deployed in environments with limited network access. To deploy
 in this environment, configure a Juju model with appropriate proxy and/or
 mirror options. See Configuring Models for more information.
 
-##Using
+# Using
 Once deployed, there are a number of actions available in this charm.
 
 List the zookeeper servers that our kafka brokers
@@ -57,7 +57,7 @@ juju show-action-output <id>  # <-- id from above command
 
 juju run-action kafka/0 perf-test topic=one messages=10000 recordsize=10
 
-##Verifying Status
+# Verifying Status
 Kafka charms provide extended status reporting to indicate when they
 are ready:
 
@@ -70,7 +70,7 @@ The message column will provide information about a given unit's state.
 This charm is ready for use once the status message indicates that it is
 ready.
 
-##Smoke Test
+# Smoke Test
 This charm provides a smoke-test action that can be used to verify the
 application is functioning as expected. The test will verify connectivity
 between Kafka and Zookeeper, and will test creation and listing of Kafka
@@ -79,7 +79,7 @@ topics. Run the action as follows:
 juju run-action --wait kafka/0 smoke-test
 Watch the progress of the smoke test actions with:
 
-##Performance Test
+# Performance Test
 This charm provides a perf-test action that can be used to run the
 application performance. The test will create the topic and run the
 performance test and log all the data in kafka juju log files.
@@ -89,7 +89,7 @@ juju run-action kafka/0 perf-test topic=one messages=10000 recordsize=10
 
 juju debug-log --include kafka/0 would print the test metrics as well.
 
-##Scaling
+# Scaling
 Expanding a cluster with many brokers is as easy as adding more Kafka units.
 Expanding cluster does not make any effect on the curernt topics but any new
 topic will be distributed on new kafka cluster machine.
@@ -110,7 +110,7 @@ An expected response should be similar to:
 Topic: my-replicated-topic PartitionCount:1 ReplicationFactor:2 Configs:
 Topic: my-replicated-topic Partition: 0 Leader: 2 Replicas: 2,0 Isr: 2,0
 
-##Connecting External Clients
+# Connecting External Clients
 By default, this charm does not expose Kafka outside of the provider's network.
 To allow external clients to connect to Kafka, first expose the service:
 
