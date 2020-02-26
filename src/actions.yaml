@@ -108,3 +108,11 @@ upgrade-kafka:
 show-upgrade:
   description: Upgrade kafka installation
 
+"ops-acl":
+  "description": "Run ACL operations on the cluster"
+  "params":
+    "acloperations":
+      "type": "string"
+      "description": "Operations to be run on the Kafka cluster"
+  "required": ["acloperations"]
+  "additionalProperties": !!bool "false"
