@@ -41,13 +41,5 @@ def get_zookeepers():
 
 
 def get_kafkaport():
-    cfg = '{}/server.properties'.format(KAFKA_APP_DATA)
-    print(cfg)
-    file = open(cfg, "r")
-
-    for line in file:
-        if re.search('^listeners=.*', line):
-            port = line.split(":")[2].strip('\n')
-            return port
-
-    return None
+    config = hookenv.config()
+    return config['port']

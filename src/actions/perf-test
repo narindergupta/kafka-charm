@@ -35,7 +35,6 @@ perf_messsages = hookenv.action_get('messages')
 record_size = hookenv.action_get('recordsize')
 topic_name = hookenv.action_get('topic')
 ssl_properties = os.path.join(KAFKA_APP_DATA, 'client-ssl.properties')
-throughput = hookenv.action_get('messages')
 topic_replication = 1
 topic_partitions = 10
 perf_timeout = hookenv.action_get('timeout')
