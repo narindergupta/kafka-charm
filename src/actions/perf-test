@@ -84,3 +84,11 @@ if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE)
                         '--print-metrics'])
     except subprocess.CalledProcessError as e:
         kafkautils.fail('Kafka command failed: {}'.format(e.output))
+
+    # delete topics
+    try:
+        output = subprocess.check_call(['/usr/bin/kafka-topics',
+                        '--zookeeper', zookeepers, '--delete',
+                        '--topic', topic_name])
+    except subprocess.CalledProcessError as e:
+        kafkautils.fail('Kafka command failed: {}'.format(e.output))
