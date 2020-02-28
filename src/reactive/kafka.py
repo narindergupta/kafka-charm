@@ -40,9 +40,6 @@ from charmhelpers.core.hookenv import log
 @when('apt.installed.kafka')
 @when_not('zookeeper.joined')
 def waiting_for_zookeeper():
-    kafka = Kafka()
-    kafka.stop()
-    kafka.install()
     hookenv.status_set('blocked', 'waiting for relation to zookeeper')
 
 
@@ -50,8 +47,8 @@ def waiting_for_zookeeper():
 @when_not('kafka.started', 'zookeeper.ready')
 def waiting_for_zookeeper_ready(zk):
     kafka = Kafka()
-    kafka.stop()
     kafka.install()
+    kafka.daemon_reload()
     hookenv.status_set('waiting', 'waiting for zookeeper to become ready')
 
 
@@ -65,9 +62,6 @@ def upgrade_charm():
 @when_not('kafka.ca.keystore.saved', 'kafka.server.keystore.saved')
 @when('apt.installed.kafka')
 def waiting_for_certificates():
-    kafka = Kafka()
-    kafka.stop()
-    kafka.install()
     config = hookenv.config()
     if config['ssl_cert']:
         set_state('certificates.available')
@@ -230,6 +224,7 @@ def import_ca_crt_to_keystore():
 
             remove_state('tls_client.ca_installed')
             set_state('kafka.ca.keystore.saved')
+            remove_state('kafka.started')
 
 
 @when('config.changed.subject_alt_names', 'certificates.available',
@@ -240,6 +235,7 @@ def update_certificates():
     # it will update.
     send_data()
     remove_state('config.changed.subject_alt_names')
+    remove_state('kafka.started')
 
 
 @when('config.changed.ssl_key_password', 'kafka.started')
@@ -278,6 +274,7 @@ def change_ssl_key():
     import_srv_crt_to_keystore()
     import_ca_crt_to_keystore()
     remove_state('config.changed.ssl_key_password')
+    remove_state('kafka.started')
 
 
 @when('tls_client.ca.written')
@@ -297,14 +294,17 @@ def configure_kafka(zk):
     hookenv.status_set('maintenance', 'setting up kafka')
     log_dir = hookenv.config()['log_dir']
     kafka = Kafka()
+    if kafka.is_running():
+        kafka.stop()
     zks = zk.zookeepers()
     kafka.install(zk_units=zks, log_dir=log_dir)
+    if not kafka.is_running():
+        kafka.start()
     hookenv.open_port(hookenv.config()['port'])
     # set app version string for juju status output
     kafka_version = kafka.version()
     hookenv.application_version_set(kafka_version)
     hookenv.status_set('active', 'ready')
-    kafka.restart()
     set_state('kafka.started')
 
 
@@ -320,7 +320,12 @@ def config_changed(zk):
     remove_state('kafka.started')
 
 
-@when('kafka.started', 'zookeeper.ready')
+@when(
+    'apt.installed.kafka',
+    'zookeeper.ready',
+    'kafka.ca.keystore.saved',
+    'kafka.server.keystore.saved',
+    'kafka.started')
 def configure_kafka_zookeepers(zk):
     """Configure ready zookeepers and restart kafka if needed.
     As zks come and go, server.properties will be updated. When that file
@@ -335,8 +340,11 @@ def configure_kafka_zookeepers(zk):
     hookenv.log('Checking Zookeeper configuration')
     hookenv.status_set('maintenance', 'updating zookeeper instances')
     kafka = Kafka()
+    if kafka.is_running():
+        kafka.stop()
     kafka.install(zk_units=zks, log_dir=log_dir)
-    kafka.restart()
+    if not kafka.is_running():
+        kafka.start()
     hookenv.status_set('active', 'ready')
 
 

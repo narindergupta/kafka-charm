@@ -17,6 +17,7 @@ import os
 import shutil
 import re
 import socket
+import time
 
 from pathlib import Path
 from base64 import b64encode, b64decode
@@ -31,7 +32,7 @@ from charms import apt
 KAFKA_APP = 'kafka'
 KAFKA_SERVICE = '{}.service'.format(KAFKA_APP)
 KAFKA_APP_DATA = '/etc/{}'.format(KAFKA_APP)
-KAFKA_SERVICE_CONF = '/lib/systemd/system/'
+KAFKA_SERVICE_CONF = '/etc/systemd/system/{}.d'.format(KAFKA_SERVICE)
 KAFKA_BIN = '/usr/lib/kafka/bin/'
 certs_dir = Path('/etc/kafka')
 ca_crt_path = '/usr/local/share/ca-certificates/kafka.crt'
@@ -94,6 +95,9 @@ class Kafka(object):
             os.makedirs(log_dir, mode=0o755, exist_ok=True)
             shutil.chown(log_dir, user='kafka')
 
+        os.makedirs(KAFKA_SERVICE_CONF, mode=0o644, exist_ok=True)
+        shutil.chown(KAFKA_SERVICE_CONF, user='root')
+
         for file_config in ('consumer.properties', 'producer.properties',
                             'connect-standalone.properties',
                             'connect-distributed.properties',
@@ -117,8 +121,8 @@ class Kafka(object):
             )
 
         render(
-            source='kafka.service',
-            target=os.path.join(KAFKA_SERVICE_CONF, 'kafka.service'),
+            source='override.conf',
+            target=os.path.join(KAFKA_SERVICE_CONF, 'kafka.service.conf'),
             owner='root',
             perms=0o644,
             context=context
@@ -137,25 +141,34 @@ class Kafka(object):
             outfile.write(extraconfig)
             outfile.close()
 
+    def daemon_reload(self):
+        '''
+        Run Daemon Reload needed whenever there is change in system service.
+        '''
+        host.service("daemon-reload","")
+
     def restart(self):
         '''
         Restarts the Kafka service.
         '''
-        host.service_reload(KAFKA_SERVICE)
         host.service_restart(KAFKA_SERVICE)
 
     def start(self):
         '''
         Starts the Kafka service.
         '''
-        host.service_reload(KAFKA_SERVICE)
+        if self.is_running():
+            host.service_reload(KAFKA_SERVICE)
+        else:
+            host.service_start(KAFKA_SERVICE)
 
     def stop(self):
         '''
         Stops the Kafka service.
 
         '''
-        host.service_stop(KAFKA_SERVICE)
+        if self.is_running():
+            host.service_stop(KAFKA_SERVICE)
 
     def is_running(self):
         '''
