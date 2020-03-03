@@ -105,9 +105,6 @@
   "additionalProperties": !!bool "false"
 upgrade-kafka:
   description: Upgrade kafka installation
-show-upgrade:
-  description: Upgrade kafka installation
-
 "ops-acl":
   "description": "Run ACL operations on the cluster"
   "params":

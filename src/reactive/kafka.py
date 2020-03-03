@@ -59,9 +59,14 @@ def upgrade_charm():
     remove_state('kafka.started')
 
 
-@when_not('kafka.ca.keystore.saved', 'kafka.server.keystore.saved')
-@when('apt.installed.kafka')
+@when_not('kafka.ca.keystore.saved',
+        'kafka.server.keystore.saved',
+        'kafka.started')
+@when('apt.installed.kafka', 'zookeeper.ready')
 def waiting_for_certificates():
+    kafka = Kafka()
+    kafka.install()
+    kafka.daemon_reload()
     config = hookenv.config()
     if config['ssl_cert']:
         set_state('certificates.available')

@@ -45,7 +45,7 @@ if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE)
     except subprocess.CalledProcessError as e:
         kafkautils.fail('Kafka command failed: {}'.format(e.output))
     else:
-        hookenv.action_set({'raw': output})
-        hookenv.action_set({'outcome': 'success'})
+        hookenv.function_set({'raw': output})
+        hookenv.function_set({'outcome': 'success'})
 else:
     kafkautils.fail('kafka-server service is not running')

@@ -6,7 +6,7 @@ from charmhelpers.core import hookenv
 
 from charms.reactive import remove_state
 
-from charms.layer import apt
+from charms import apt
 
 
 if not hookenv.config().get('inter_broker_protocol_version'):
@@ -18,4 +18,4 @@ remove_state('apt.installed.kafka')
 
 apt.install('kafka')
 
-hookenv.action_set({'outcome': 'success'})
+hookenv.function_set({'outcome': 'success'})

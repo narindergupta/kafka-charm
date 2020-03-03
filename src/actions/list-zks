@@ -31,8 +31,8 @@ if not is_state('kafka.started'):
 if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE):
     zookeepers = kafkautils.get_zookeepers()
     if zookeepers:
-        hookenv.action_set({'raw': zookeepers})
-        hookenv.action_set({'outcome': 'success'})
+        hookenv.function_set({'raw': zookeepers})
+        hookenv.function_set({'outcome': 'success'})
     else:
         kafkautils.fail('No zookeeper.connect string found')
 else:

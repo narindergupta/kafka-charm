@@ -59,6 +59,6 @@ if host.service_available(KAFKA_SERVICE) and host.service_running(KAFKA_SERVICE)
         kafkautils.fail('Kafka command failed: {}'.format(e.output))
 
     # If we haven't failed yet, we passed
-    hookenv.action_set({'outcome': 'success'})
+    hookenv.function_set({'outcome': 'success'})
 else:
     kafkautils.fail('kafka service is not running')

@@ -22,7 +22,7 @@ from charms.layer.kafka import KAFKA_APP_DATA
 
 
 def fail(msg):
-    hookenv.action_set({'outcome': 'failure'})
+    hookenv.function_set({'outcome': 'failure'})
     hookenv.action_fail(msg)
     sys.exit()
 
