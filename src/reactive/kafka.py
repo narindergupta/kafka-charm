@@ -37,6 +37,10 @@ from charms.reactive.helpers import data_changed
 from charmhelpers.core.hookenv import log
 
 
+@when_not('apt.installed.kafka')
+def install_kafka():
+    hookenv.status_set('blocked', 'waiting for installation of Kafka Package')
+
 @when('apt.installed.kafka')
 @when_not('zookeeper.joined')
 def waiting_for_zookeeper():
@@ -46,17 +50,19 @@ def waiting_for_zookeeper():
 @when('apt.installed.kafka', 'zookeeper.joined')
 @when_not('kafka.started', 'zookeeper.ready')
 def waiting_for_zookeeper_ready(zk):
-    kafka = Kafka()
-    kafka.install()
-    kafka.daemon_reload()
     hookenv.status_set('waiting', 'waiting for zookeeper to become ready')
 
 
-@hook('upgrade-charm')
-def upgrade_charm():
-    update_certificates()
-    remove_state('kafka.nrpe_helper.installed')
-    remove_state('kafka.started')
+@when_not(
+    'kafka.storage.logs.attached'
+)
+@when('apt.installed.kafka')
+def waiting_for_storage_attach():
+    if hookenv.config()['log_dir']:
+        # It seems directory has been already mounted to unit.
+        set_state('kafka.storage.logs.attached')
+    else:
+        hookenv.status_set('waiting', 'waiting for storage attachment')
 
 
 @when_not('kafka.ca.keystore.saved',
@@ -64,9 +70,6 @@ def upgrade_charm():
         'kafka.started')
 @when('apt.installed.kafka', 'zookeeper.ready')
 def waiting_for_certificates():
-    kafka = Kafka()
-    kafka.install()
-    kafka.daemon_reload()
     config = hookenv.config()
     if config['ssl_cert']:
         set_state('certificates.available')
@@ -297,12 +300,22 @@ def ca_written():
 @when_not('kafka.started')
 def configure_kafka(zk):
     hookenv.status_set('maintenance', 'setting up kafka')
-    log_dir = hookenv.config()['log_dir']
+    if hookenv.config()['log_dir']:
+       log_dir = hookenv.config()['log_dir']
+    else:
+       log_dir = unitdata.kv().get('kafka.storage.log_dir')
+    data_changed('kafka.storage.log_dir', log_dir)
     kafka = Kafka()
     if kafka.is_running():
         kafka.stop()
     zks = zk.zookeepers()
-    kafka.install(zk_units=zks, log_dir=log_dir)
+    if log_dir:
+        kafka.install(zk_units=zks, log_dir=log_dir)
+    else:
+        hookenv.status_set(
+            'blocked',
+            'unable to get storage dir')
+
     if not kafka.is_running():
         kafka.start()
     hookenv.open_port(hookenv.config()['port'])
@@ -337,9 +350,13 @@ def configure_kafka_zookeepers(zk):
     changes, restart Kafka and set appropriate status messages.
     """
     zks = zk.zookeepers()
-    log_dir = hookenv.config()['log_dir']
-    if not((
-            data_changed('zookeepers', zks))):
+    if hookenv.config()['log_dir']:
+       log_dir = hookenv.config()['log_dir']
+    else:
+       log_dir = unitdata.kv().get('kafka.storage.log_dir')
+    if not(any((
+            data_changed('zookeepers', zks),
+            data_changed('kafka.storage.log_dir', log_dir)))):
         return
 
     hookenv.log('Checking Zookeeper configuration')

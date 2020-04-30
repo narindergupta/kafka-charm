@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 from base64 import b64encode, b64decode
 
-from charmhelpers.core import hookenv, host
+from charmhelpers.core import host, hookenv
 from charmhelpers.core.templating import render
 
 from charms.reactive.relations import RelationBase
@@ -52,12 +52,14 @@ class Kafka(object):
         for unit in zk_units or self.get_zks():
             ip = resolve_private_address(unit['host'])
             zks.append('%s:%s' % (ip, unit['port']))
-        zks.sort()
-        zk_connect = ','.join(zks)
+
+        if not zks:
+            return
+        else:
+            zks.sort()
+            zk_connect = ','.join(zks)
 
         config = hookenv.config()
-        log_dir = config['log_dir']
-
         context = {
             'broker_id': os.environ['JUJU_UNIT_NAME'].split('/', 1)[1],
             'port': config['port'],

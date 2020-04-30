@@ -31,6 +31,14 @@ requires:
     interface: tls-certificates
   zookeeper:
     interface: zookeeper
+storage:
+  logs:
+    type: filesystem
+    description: Directory where log files will be stored
+    minimum-size: 20M
+    location: /media/kafka
+    multiple:
+      range: "0-1"
 min-juju-version: "2.6.0"
 series:
 - bionic

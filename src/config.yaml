@@ -103,7 +103,7 @@ options:
       Port to run the Kafka services on
   log_dir:
     type: string
-    default: '/var/lib/kafka/logs'
+    default: ''
     description: |-
       This option will use the driectory for logs. In case of MAAS deployment
       we should preconfigured the mount point.
