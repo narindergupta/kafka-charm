@@ -32,7 +32,7 @@ from charms.layer import tls_client
 from charmhelpers.core import hookenv, unitdata
 from charms.reactive import (when, when_not, hook, when_file_changed,
                              remove_state, set_state, endpoint_from_flag,
-                             set_flag)
+                             set_flag, is_state)
 from charms.reactive.helpers import data_changed
 from charmhelpers.core.hookenv import log
 
@@ -383,9 +383,13 @@ def stop_kafka_waiting_for_zookeeper_ready():
 
 @when('client.joined', 'zookeeper.ready')
 def serve_client(client, zookeeper):
-    client.send_port(hookenv.config()['port'])
-    client.send_zookeepers(zookeeper.zookeepers())
+    if is_state('leadership.is_leader'):
+        client.send_port(hookenv.config()['port'],
+            hookenv.unit_public_ip())
+    else:
+        client.send_port(hookenv.config()['port'])
 
+    client.send_zookeepers(zookeeper.zookeepers())
     hookenv.log('Sent Kafka configuration to client')
 
 

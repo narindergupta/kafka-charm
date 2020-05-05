@@ -1,6 +1,7 @@
 includes:
 - 'layer:basic'
 - "layer:options"
+- "layer:leadership"
 - 'interface:zookeeper'
 - 'interface:kafka'
 - 'interface:tls-certificates'
