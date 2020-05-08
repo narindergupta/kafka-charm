@@ -72,10 +72,11 @@ def waiting_for_certificates():
 
 @when('config.changed.ssl_key_password', 'kafka.started')
 def change_ssl_key():
-    kafka = Kafka()
     config = hookenv.config()
     password = keystore_password()
     new_password = config['ssl_key_password']
+    if not( data_changed('storepasswd', new_password)):
+        return
     for jks_type in ('server', 'client', 'server.truststore'):
         jks_path = os.path.join(
             KAFKA_APP_DATA,
@@ -138,7 +139,6 @@ def configure_kafka(zk):
 def restart():
     hookenv.status_set('maintenance', 'Rolling restart')
     kafka = Kafka()
-    kafka.daemon_reload()
     if not kafka.is_running():
         kafka.start()
     else:
@@ -204,11 +204,9 @@ def stop_kafka_waiting_for_zookeeper_ready():
 
 @when('client.joined', 'zookeeper.ready')
 def serve_client(client, zookeeper):
-    if is_state('leadership.is_leader'):
+    if hookenv.is_leader():
         client.send_port(hookenv.config()['port'],
             hookenv.unit_public_ip())
-    else:
-        client.send_port(hookenv.config()['port'])
 
     client.send_zookeepers(zookeeper.zookeepers())
     hookenv.log('Sent Kafka configuration to client')

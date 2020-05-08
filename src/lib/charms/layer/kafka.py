@@ -123,9 +123,6 @@ class Kafka(object):
             os.makedirs(log_dir, mode=0o755, exist_ok=True)
             shutil.chown(log_dir, user='kafka')
 
-        os.makedirs(KAFKA_SERVICE_CONF, mode=0o644, exist_ok=True)
-        shutil.chown(KAFKA_SERVICE_CONF, user='root')
-
         for file_config in ('consumer.properties', 'producer.properties',
                             'connect-standalone.properties',
                             'connect-distributed.properties',
@@ -149,16 +146,8 @@ class Kafka(object):
             )
 
         render(
-            source='override.conf',
-            target=os.path.join(KAFKA_SERVICE_CONF, 'kafka.service.conf'),
-            owner='root',
-            perms=0o644,
-            context=context
-        )
-
-        render(
-            source='kafka-server-wrapper.sh',
-            target=os.path.join(KAFKA_BIN, 'kafka-server-wrapper.sh'),
+            source='kafka-server-start.sh',
+            target=os.path.join(KAFKA_BIN, 'kafka-server-start.sh'),
             owner='root',
             perms=0o755,
             context=context
