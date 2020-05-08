@@ -21,13 +21,9 @@ import tempfile
 from OpenSSL import crypto
 from subprocess import check_call
 from pathlib import Path
+import charms.coordinator
 from charms.layer.kafka import Kafka
 from charms.layer.kafka import keystore_password, KAFKA_APP_DATA
-from charms.layer.kafka import ca_crt_path
-from charms.layer.kafka import server_crt_path
-from charms.layer.kafka import server_key_path
-from charms.layer.kafka import client_crt_path
-from charms.layer.kafka import client_key_path
 from charms.layer import tls_client
 from charmhelpers.core import hookenv, unitdata
 from charms.reactive import (when, when_not, hook, when_file_changed,
@@ -53,9 +49,7 @@ def waiting_for_zookeeper_ready(zk):
     hookenv.status_set('waiting', 'waiting for zookeeper to become ready')
 
 
-@when_not(
-    'kafka.storage.logs.attached'
-)
+@when_not('kafka.storage.logs.attached')
 @when('apt.installed.kafka')
 def waiting_for_storage_attach():
     if hookenv.config()['log_dir']:
@@ -66,9 +60,8 @@ def waiting_for_storage_attach():
 
 
 @when_not('kafka.ca.keystore.saved',
-        'kafka.server.keystore.saved',
-        'kafka.started')
-@when('apt.installed.kafka', 'zookeeper.ready')
+        'kafka.server.keystore.saved')
+@when('apt.installed.kafka')
 def waiting_for_certificates():
     config = hookenv.config()
     if config['ssl_cert']:
@@ -77,179 +70,9 @@ def waiting_for_certificates():
         hookenv.status_set('waiting', 'Waiting relation to certificate authority.')
 
 
-@when('certificates.available', 'apt.installed.kafka')
-def send_data():
-    '''Send the data that is required to create a server certificate for
-    this server.'''
-    config = hookenv.config()
-    if config['ssl_cert']:
-        for certs_path in ('server_crt_path', 'client_crt_path'):
-            with open(certs_path, "wb") as fs:
-                os.chmod(certs_path, stat.S_IRUSR |
-                         stat.S_IWUSR |
-                         stat.S_IRGRP |
-                         stat.S_IROTH)
-                fs.write(base64.b64decode(config['ssl_cert']))
-            if config['ssl_key']:
-                with open(certs_path, "wb") as fks:
-                    os.chmod(certs_path, stat.S_IWUSR |
-                              stat.S_IWUSR )
-                    fks.write(base64.b64decode(config['ssl_key']))
-        import_srv_crt_to_keystore()
-        if config['ssl_ca']:
-            with open(ca_crt_path, "wb") as fca:
-                os.chmod(ca_crt_path, stat.S_IRUSR |
-                         stat.S_IWUSR |
-                         stat.S_IRGRP |
-                         stat.S_IROTH)
-                fca.write(base64.b64decode(config['ssl_ca']))
-        import_ca_crt_to_keystore()
-    else:
-        common_name = hookenv.unit_private_ip()
-        common_public_name = hookenv.unit_public_ip()
-        sans = [
-            common_name,
-            common_public_name,
-            hookenv.unit_public_ip(),
-            socket.gethostname(),
-            socket.getfqdn(),
-        ]
-
-        # maybe they have extra names they want as SANs
-        extra_sans = hookenv.config('subject_alt_names')
-        if extra_sans and not extra_sans == "":
-            sans.extend(extra_sans.split())
-
-        # Request a server cert with this information.
-        tls_client.request_server_cert(common_name, sans,
-                                   crt_path=server_crt_path,
-                                   key_path=server_key_path)
-
-        # Request a client cert with this information.
-        tls_client.request_client_cert(common_name, sans,
-                                   crt_path=client_crt_path,
-                                   key_path=client_key_path)
-
-
-@when('tls_client.certs.changed')
-def import_srv_crt_to_keystore():
-    config = hookenv.config()
-    for cert_type in ('server', 'client'):
-        password = keystore_password()
-        crt_path = os.path.join(
-            KAFKA_APP_DATA,
-            "{}.crt".format(cert_type)
-        )
-        key_path = os.path.join(
-            KAFKA_APP_DATA,
-            "{}.key".format(cert_type)
-        )
-
-        if os.path.isfile(crt_path) and os.path.isfile(key_path):
-            with open(crt_path, 'rt') as f:
-                cert = f.read()
-                loaded_cert = crypto.load_certificate(
-                    crypto.FILETYPE_PEM,
-                    cert
-                )
-                if not data_changed(
-                    'kafka_{}_certificate'.format(cert_type),
-                    cert
-                ):
-                    if not config['ssl_key_password']:
-                        log('server certificate of key file missing')
-                        return
-
-            with open(key_path, 'rt') as f:
-                loaded_key = crypto.load_privatekey(
-                    crypto.FILETYPE_PEM,
-                    f.read()
-                )
-
-            with tempfile.NamedTemporaryFile() as tmp:
-                log('server certificate changed')
-
-                keystore_path = os.path.join(
-                    KAFKA_APP_DATA,
-                    "kafka.{}.jks".format(cert_type)
-                )
-                if os.path.isfile(keystore_path):
-                    os.remove(keystore_path)
-                pkcs12 = crypto.PKCS12Type()
-                pkcs12.set_certificate(loaded_cert)
-                pkcs12.set_privatekey(loaded_key)
-                pkcs12_data = pkcs12.export(password)
-                log('opening tmp file {}'.format(tmp.name))
-
-                # write cert and private key to the pkcs12 file
-                tmp.write(pkcs12_data)
-                tmp.flush()
-
-                log('importing pkcs12')
-                # import the pkcs12 into the keystore
-                check_call([
-                    'keytool',
-                    '-v', '-importkeystore',
-                    '-srckeystore', str(tmp.name),
-                    '-srcstorepass', password,
-                    '-srcstoretype', 'PKCS12',
-                    '-destkeystore', keystore_path,
-                    '-deststoretype', 'JKS',
-                    '-deststorepass', password,
-                    '--noprompt'
-                ])
-                set_state('kafka.{}.keystore.saved'.format(cert_type))
-
-        remove_state('kafka.started')
-        remove_state('tls_client.certs.changed')
-
-
-@when('tls_client.ca_installed')
-@when_not('kafka.ca.keystore.saved')
-def import_ca_crt_to_keystore():
-    config = hookenv.config()
-    if os.path.isfile(ca_crt_path):
-        with open(ca_crt_path, 'rt') as f:
-            changed = data_changed('ca_certificate', f.read())
-            if not changed:
-                if config['ssl_key_password']:
-                    changed = 'true'
-
-        if changed:
-            ca_keystore = os.path.join(
-                KAFKA_APP_DATA,
-                "kafka.server.truststore.jks"
-            )
-            if os.path.isfile(ca_keystore):
-                os.remove(ca_keystore)
-            check_call([
-                'keytool',
-                '-import', '-trustcacerts', '-noprompt',
-                '-keystore', ca_keystore,
-                '-storepass', keystore_password(),
-                '-file', ca_crt_path
-            ])
-
-            remove_state('tls_client.ca_installed')
-            set_state('kafka.ca.keystore.saved')
-            remove_state('kafka.started')
-
-
-@when('config.changed.subject_alt_names', 'certificates.available',
-      'kafka.started')
-def update_certificates():
-    # Using the config.changed.extra_sans flag to catch changes.
-    # IP changes will take ~5 minutes or so to propagate, but
-    # it will update.
-    send_data()
-    remove_state('config.changed.subject_alt_names')
-    remove_state('kafka.started')
-
-
 @when('config.changed.ssl_key_password', 'kafka.started')
 def change_ssl_key():
     kafka = Kafka()
-    kafka.stop()
     config = hookenv.config()
     password = keystore_password()
     new_password = config['ssl_key_password']
@@ -285,12 +108,6 @@ def change_ssl_key():
     remove_state('kafka.started')
 
 
-@when('tls_client.ca.written')
-def ca_written():
-    remove_state('kafka.started')
-    remove_state('tls_client.ca.written')
-
-
 @when(
     'apt.installed.kafka',
     'zookeeper.ready',
@@ -304,20 +121,28 @@ def configure_kafka(zk):
        log_dir = hookenv.config()['log_dir']
     else:
        log_dir = unitdata.kv().get('kafka.storage.log_dir')
-    data_changed('kafka.storage.log_dir', log_dir)
     kafka = Kafka()
-    if kafka.is_running():
-        kafka.stop()
     zks = zk.zookeepers()
+    data_changed('kafka.storage.log_dir', log_dir)
+    data_changed('zookeepers', zks),
     if log_dir:
         kafka.install(zk_units=zks, log_dir=log_dir)
     else:
         hookenv.status_set(
             'blocked',
             'unable to get storage dir')
+    charms.coordinator.acquire('restart')
 
+
+@when('coordinator.granted.restart')
+def restart():
+    hookenv.status_set('maintenance', 'Rolling restart')
+    kafka = Kafka()
+    kafka.daemon_reload()
     if not kafka.is_running():
         kafka.start()
+    else:
+        kafka.restart()
     hookenv.open_port(hookenv.config()['port'])
     # set app version string for juju status output
     kafka_version = kafka.version()
@@ -362,12 +187,8 @@ def configure_kafka_zookeepers(zk):
     hookenv.log('Checking Zookeeper configuration')
     hookenv.status_set('maintenance', 'updating zookeeper instances')
     kafka = Kafka()
-    if kafka.is_running():
-        kafka.stop()
     kafka.install(zk_units=zks, log_dir=log_dir)
-    if not kafka.is_running():
-        kafka.start()
-    hookenv.status_set('active', 'ready')
+    charms.coordinator.acquire('restart')
 
 
 @when('kafka.started')

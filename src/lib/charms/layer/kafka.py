@@ -34,12 +34,47 @@ KAFKA_SERVICE = '{}.service'.format(KAFKA_APP)
 KAFKA_APP_DATA = '/etc/{}'.format(KAFKA_APP)
 KAFKA_SERVICE_CONF = '/etc/systemd/system/{}.d'.format(KAFKA_SERVICE)
 KAFKA_BIN = '/usr/lib/kafka/bin/'
-certs_dir = Path('/etc/kafka')
-ca_crt_path = '/usr/local/share/ca-certificates/kafka.crt'
-server_crt_path = certs_dir / 'server.crt'
-server_key_path = certs_dir / 'server.key'
-client_crt_path = certs_dir / 'client.crt'
-client_key_path = certs_dir / 'client.key'
+
+
+def caKeystore():
+    return os.path.join(
+        KAFKA_APP_DATA,
+        "kafka.server.truststore.jks"
+    )
+
+
+def caPath():
+    return '/usr/local/share/ca-certificates/{}.crt'.format(
+        hookenv.service_name()
+    )
+
+
+def crtPath(cert_type):
+    return os.path.join(
+        KAFKA_APP_DATA,
+        "{}.crt".format(cert_type)
+    )
+
+
+def keyPath(cert_type):
+    return os.path.join(
+        KAFKA_APP_DATA,
+        "{}.key".format(cert_type)
+    )
+
+
+def keystore(cert_type):
+    return os.path.join(
+        KAFKA_APP_DATA,
+        "kafka.{}.jks".format(cert_type)
+    )
+
+
+def keystoreSecret():
+    return os.path.join(
+        KAFKA_APP_DATA,
+        'keystore.secret'
+    )
 
 
 class Kafka(object):
@@ -66,18 +101,9 @@ class Kafka(object):
             'zookeeper_connection_string': zk_connect,
             'log_dirs': log_dir,
             'keystore_password': keystore_password(),
-            'ca_keystore': os.path.join(
-                KAFKA_APP_DATA,
-                'kafka.server.truststore.jks'
-            ),
-            'server_keystore': os.path.join(
-                KAFKA_APP_DATA,
-                'kafka.server.jks'
-            ),
-            'client_keystore': os.path.join(
-                KAFKA_APP_DATA,
-                'kafka.client.jks'
-            ),
+            'ca_keystore': caKeystore(),
+            'server_keystore': keystore('server'),
+            'client_keystore': keystore('client'),
             'bind_addr': hookenv.unit_private_ip(),
             'adv_bind_addr': get_ingress_address('listener'),
             'auto_create_topics': config['auto_create_topics'],

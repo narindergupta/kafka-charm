@@ -1,13 +1,14 @@
 includes:
 - 'layer:basic'
-- "layer:options"
-- "layer:leadership"
+- 'layer:coordinator'
+- 'layer:options'
+- 'layer:leadership'
 - 'interface:zookeeper'
 - 'interface:kafka'
 - 'interface:tls-certificates'
 - 'layer:tls-client'
 - 'layer:apt'
-- "layer:nagios"
+- 'layer:nagios'
 - 'interface:nrpe-external-master'
 - 'interface:local-monitors'
 - 'interface:grafana-dashboard'
@@ -20,5 +21,8 @@ options:
   apt:
     packages:
       - kafka
+  coordinator:
+    class: charmhelpers.coordinator.Serial
+    log_level: debug
 repo: https://github.com/narindergupta/kafka-charm.git
 is: "kafka"

@@ -15,7 +15,6 @@ if not hookenv.config().get('inter_broker_protocol_version'):
 remove_state('kafka.nrpe_helper.installed')
 remove_state('kafka.started')
 remove_state('apt.installed.kafka')
-
-apt.install('kafka')
+remove_state('apt.queued_installs')
 
 hookenv.function_set({'outcome': 'success'})
